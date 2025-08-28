@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(venv/Scripts/python -m pytest tests/ -v)",
+      "Bash(npm install)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

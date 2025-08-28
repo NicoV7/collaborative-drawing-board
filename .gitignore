@@ -1,25 +1,178 @@
-# Dependencies
+# ================================
+# Collaborative Drawing Board
+# Comprehensive .gitignore
+# ================================
+
+# ===== NODE.JS / FRONTEND =====
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# React build outputs
+/frontend/build/
+/frontend/dist/
+/build
+/dist
+/public/build
+
+# Package manager files
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+
+# Parcel cache
+.cache
+.parcel-cache
+
+# Next.js
+.next/
+out/
+
+# Storybook
+.out
+.storybook-out
+
+# ===== PYTHON / BACKEND =====
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 *.pyo
 *.pyd
 .Python
-env/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
 .tox/
+.nox/
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
-*.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Virtual environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# FastAPI
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ===== DOCKER =====
+.dockerignore
+
+# ===== DATABASE =====
+# PostgreSQL
+*.sql
+*.dump
+*.backup
+
+# SQLite
+*.sqlite3
+*.sqlite
+*.db
+
+# Database migrations (keep versioned ones)
+migrations/versions/*.pyc
+
+# ===== REDIS =====
+dump.rdb
+appendonly.aof
+
+# ===== SECURITY & KEYS =====
+# Private keys and certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# JWT secrets
+jwt.secret
+*.jwt
+
+# Environment-specific configs
+config/production.json
+config/staging.json
+.secrets/
+
+# ===== MEDIA & EXPORTS =====
+# Drawing exports
+exports/
+gallery_exports/
+board_exports/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webm
+*.mp4
+*.svg
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# ===== DEVELOPMENT TOOLS =====
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # OS generated files
 .DS_Store
@@ -30,29 +183,75 @@ coverage.xml
 ehthumbs.db
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# React build
-/frontend/build/
-/frontend/dist/
-
-# Logs
-logs/
+# Log files
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+logs/
 
-# Docker
-.dockerignore
+# Backup files
+*.bak
+*.backup
+*.old
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# ===== TESTING =====
+# Test results
+test-results/
+coverage/
+.nyc_output/
+
+# E2E testing
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Jest
+jest_coverage/
+
+# ===== REAL-TIME & COLLABORATION =====
+# Yjs CRDT data
+*.yjs
+yjs_data/
+
+# WebSocket logs
+ws_logs/
+
+# ===== KUBERNETES (OPTIONAL) =====
+# Helm
+.helm/
+charts/*.tgz
+
+# Kubernetes secrets
+k8s-secrets/
+*.yaml.secret
+
+# ===== MONITORING & OBSERVABILITY =====
+# Prometheus
+prometheus_data/
+
+# Grafana
+grafana_data/
+
+# ===== FFMPEG & MEDIA PROCESSING =====
+# Temporary video files
+*.webm.tmp
+*.mp4.tmp
+ffmpeg.log
+
+# ===== SUPABASE (IF USED) =====
+.supabase/
+
+# ===== MISC =====
+# Local configuration overrides
+.local/
+local.config.js
+
+# Performance profiling
+*.prof
+*.trace
+
+# Security scan results
+security-report.json
+vulnerability-report.json
+
+# Encryption test files
+test_encrypted_*
+*.enc
