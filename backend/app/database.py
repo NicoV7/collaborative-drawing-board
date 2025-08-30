@@ -3,7 +3,7 @@ Database configuration and models for collaborative drawing board.
 Uses SQLAlchemy with in-memory SQLite for testing and performance.
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, Text, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, Text, ForeignKey, LargeBinary, Float
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime, timezone
 import os
@@ -141,6 +141,190 @@ class Board(Base):
         Does not include encryption key to prevent accidental logging of sensitive data.
         """
         return f"<Board(id={self.id}, name='{self.name}', owner_id={self.owner_id})>"
+
+
+class Stroke(Base):
+    """
+    Stroke model for drawing data with TTL support.
+    
+    TTL Implementation:
+    - Anonymous user strokes: 24 hours
+    - Registered user strokes: 30 days (configurable per user tier)
+    - Automatic cleanup through DataExpirationService
+    """
+    __tablename__ = "strokes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    board_id = Column(Integer, ForeignKey("boards.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # Null for anonymous
+    stroke_data = Column(LargeBinary, nullable=False)  # Encrypted stroke path data
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    board = relationship("Board")
+    user = relationship("User")
+
+
+class FileUpload(Base):
+    """
+    File upload model with TTL support for temporary and template files.
+    
+    TTL Implementation:
+    - Temporary uploads: 1 hour
+    - Template files: 7 days if unused
+    - User uploads: Based on user tier
+    """
+    __tablename__ = "file_uploads"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    filename = Column(String(255), nullable=False)
+    file_path = Column(Text, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    upload_type = Column(String(50), nullable=False, index=True)  # 'temporary', 'template', 'avatar'
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    user = relationship("User")
+
+
+class BoardTemplate(Base):
+    """
+    Board template model with TTL for unused templates.
+    
+    TTL Implementation:
+    - Unused templates: 7 days
+    - Template usage tracking for cleanup decisions
+    """
+    __tablename__ = "board_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    template_data = Column(Text, nullable=False)  # JSON template definition
+    usage_count = Column(Integer, default=0)
+    last_used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    creator = relationship("User")
+
+
+class DataCleanupJob(Base):
+    """
+    Track automated cleanup operations for monitoring and logging.
+    
+    Used by DataExpirationService and CleanupScheduler for:
+    - Cleanup operation history
+    - Performance metrics tracking
+    - Failure analysis and retry logic
+    """
+    __tablename__ = "data_cleanup_jobs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_type = Column(String(50), nullable=False, index=True)  # 'strokes', 'uploads', 'templates'
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    completed_at = Column(DateTime, nullable=True)
+    status = Column(String(20), nullable=False, default='running')  # 'running', 'completed', 'failed'
+    deleted_count = Column(Integer, default=0)
+    freed_memory_bytes = Column(Integer, default=0)
+    freed_storage_bytes = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    execution_time_ms = Column(Integer, nullable=True)
+
+
+class UserAvatar(Base):
+    """
+    User avatar images with TTL for inactive users.
+    
+    TTL Implementation:
+    - Inactive user avatars: 30 days
+    - Large file cleanup prioritization by file_size
+    """
+    __tablename__ = "user_avatars"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    image_url = Column(Text, nullable=False)
+    file_path = Column(Text, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    user = relationship("User")
+
+
+class UserPresence(Base):
+    """
+    Track user presence in collaborative sessions with TTL.
+    
+    TTL Implementation:
+    - Presence records: Auto-expire after 1 hour of inactivity
+    - Used for collaborative UI and cleanup optimization
+    """
+    __tablename__ = "user_presence"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    board_id = Column(Integer, ForeignKey("boards.id"), nullable=False, index=True)
+    last_seen = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    user = relationship("User")
+    board = relationship("Board")
+
+
+class LoginHistory(Base):
+    """
+    User login history with TTL for compliance and security.
+    
+    TTL Implementation:
+    - Login history: 90 days (compliance requirements)
+    - IP tracking for security analysis
+    """
+    __tablename__ = "login_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    login_time = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    ip_address = Column(String(45), nullable=False, index=True)  # IPv4/IPv6
+    user_agent = Column(Text, nullable=True)
+    success = Column(Boolean, nullable=False, default=True)
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    user = relationship("User")
+
+
+class EditHistory(Base):
+    """
+    Board edit history with TTL for collaboration tracking.
+    
+    TTL Implementation:
+    - Edit history: 30 days for active boards
+    - Action data includes drawing operations and metadata
+    """
+    __tablename__ = "edit_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    board_id = Column(Integer, ForeignKey("boards.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # Null for anonymous
+    action_type = Column(String(50), nullable=False, index=True)  # 'stroke', 'erase', 'clear', etc.
+    action_data = Column(Text, nullable=False)  # JSON action details
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)  # TTL enforcement
+    
+    # Relationships
+    board = relationship("Board")
+    user = relationship("User")
 
 
 def get_db():
