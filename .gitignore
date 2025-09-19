@@ -254,4 +254,4 @@ vulnerability-report.json
 
 # Encryption test files
 test_encrypted_*
-*.enc
+*.enc.claude/
