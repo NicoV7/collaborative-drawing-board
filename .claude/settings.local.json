@@ -11,7 +11,10 @@
       "Bash(node:*)",
       "Bash(timeout 30s npm test -- --testPathPattern=\"DrawingCanvas.test.debug\" --verbose --no-watchman)",
       "Bash(timeout 20s npm test DrawingCanvas.debug.test.tsx -- --verbose --no-watchman)",
-      "Bash(timeout 15s npm test DrawingCanvas.debug.test.tsx -- --verbose --no-watchman)"
+      "Bash(timeout 15s npm test DrawingCanvas.debug.test.tsx -- --verbose --no-watchman)",
+      "Bash(timeout 30s npm test CollaboratorSidebar.test.tsx -- --verbose --no-watchman)",
+      "Bash(timeout 20s npm test CollaboratorSidebar.test.tsx -- --verbose --no-watchman)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [],
     "ask": []

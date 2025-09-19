@@ -144,20 +144,35 @@ const CollaboratorSidebar: React.FC<CollaboratorSidebarProps> = ({
 
   // Set up real-time presence updates
   useEffect(() => {
-    fetchCollaborators();
-    fetchUserPresence();
-    
+    let mounted = true;
+
+    const initializeData = async () => {
+      if (mounted) {
+        await fetchCollaborators();
+        await fetchUserPresence();
+      }
+    };
+
+    initializeData();
+
     // Set up periodic presence updates
-    const presenceInterval = setInterval(fetchUserPresence, 5000); // Every 5 seconds
-    
+    const presenceInterval = setInterval(() => {
+      if (mounted) {
+        fetchUserPresence();
+      }
+    }, 5000); // Every 5 seconds
+
     // Set up WebSocket for real-time presence (would be implemented with actual WebSocket)
     // const ws = new WebSocket(`ws://localhost:8000/ws/boards/${boardId}/presence`);
     // ws.onmessage = (event) => {
     //   const presence = JSON.parse(event.data);
-    //   setUserPresence(prev => new Map(prev.set(presence.userId, presence)));
+    //   if (mounted) {
+    //     setUserPresence(prev => new Map(prev.set(presence.userId, presence)));
+    //   }
     // };
-    
+
     return () => {
+      mounted = false;
       clearInterval(presenceInterval);
       // ws.close();
     };
@@ -176,8 +191,11 @@ const CollaboratorSidebar: React.FC<CollaboratorSidebarProps> = ({
   // Determine user online status
   const isUserOnline = useCallback((user: User): boolean => {
     const presence = userPresence.get(user.id);
-    if (!presence) return false;
-    
+    if (!presence) {
+      // Fall back to user's base online status if no presence data
+      return user.isOnline;
+    }
+
     // User is online if they've been active in the last 2 minutes
     const threshold = new Date(Date.now() - 2 * 60 * 1000);
     return presence.isActive && presence.lastSeen > threshold;

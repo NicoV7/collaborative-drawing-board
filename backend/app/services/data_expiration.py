@@ -61,7 +61,7 @@ class TTLPolicy:
         """Calculate expiry time based on user tier."""
         multiplier = self.user_tier_multipliers.get(user_tier, 1.0)
         ttl_hours = self.ttl_hours * multiplier
-        return datetime.now(timezone.utc) + timedelta(hours=ttl_hours)
+        return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=ttl_hours)
 
     def get_deletion_time(self, created_at: datetime, user_tier: str = "free") -> datetime:
         """Calculate actual deletion time including grace period."""
@@ -188,7 +188,7 @@ class DataExpirationService:
         session_data = {
             "session_id": f"anon_{datetime.now().timestamp()}",
             "expires_at": expires_at,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone.utc).replace(tzinfo=None)
         }
         
         self.logger.info(f"Created anonymous session expiring at {expires_at}")
@@ -213,7 +213,7 @@ class DataExpirationService:
         stroke_data = {
             "user_id": user_id,
             "expires_at": expires_at,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone.utc).replace(tzinfo=None)
         }
         
         self.logger.info(f"Created user stroke for user {user_id} expiring at {expires_at}")
@@ -240,7 +240,8 @@ class DataExpirationService:
             self.db.add(job)
             self.db.flush()  # Get job ID
             
-            current_time = datetime.now(timezone.utc)
+            # Use timezone-naive datetime for SQLite compatibility
+            current_time = datetime.now(timezone.utc).replace(tzinfo=None).replace(tzinfo=None)
             query = self.db.query(Stroke).filter(Stroke.expires_at <= current_time)
             
             if user_type == "anonymous":
@@ -262,7 +263,7 @@ class DataExpirationService:
             result.success = True
             
             # Update job record
-            job.completed_at = datetime.now(timezone.utc)
+            job.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
             job.status = 'completed'
             job.deleted_count = deleted_count
             job.freed_memory_bytes = freed_bytes
@@ -289,7 +290,7 @@ class DataExpirationService:
             try:
                 job.status = 'failed'
                 job.error_message = str(e)
-                job.completed_at = datetime.now(timezone.utc)
+                job.completed_at = datetime.now(timezone.utc).replace(tzinfo=None).replace(tzinfo=None)
                 self.db.commit()
             except:
                 pass  # Don't fail cleanup result due to job logging failure
@@ -310,7 +311,7 @@ class DataExpirationService:
         result = CleanupResult(job_type="templates")
         
         try:
-            current_time = datetime.now(timezone.utc)
+            current_time = datetime.now(timezone.utc).replace(tzinfo=None)
             
             # Find templates that are expired and haven't been used recently
             query = self.db.query(BoardTemplate).filter(
@@ -349,7 +350,7 @@ class DataExpirationService:
         result = CleanupResult(job_type="exports")
         
         try:
-            current_time = datetime.now(timezone.utc)
+            current_time = datetime.now(timezone.utc).replace(tzinfo=None)
             
             query = self.db.query(FileUpload).filter(
                 and_(
@@ -395,7 +396,7 @@ class DataExpirationService:
         result = CleanupResult(job_type=job_type)
         
         try:
-            current_time = datetime.now(timezone.utc)
+            current_time = datetime.now(timezone.utc).replace(tzinfo=None)
             
             query = self.db.query(model_class).filter(model_class.expires_at <= current_time)
             expired_records = query.all()
@@ -507,14 +508,14 @@ class DataExpirationService:
         
         try:
             # Calculate notification threshold
-            threshold = datetime.now(timezone.utc) + timedelta(hours=hours_before)
+            threshold = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=hours_before)
             
             # Find users with data expiring soon
             # This would integrate with notification system
             users_to_notify = self.db.query(User).join(Stroke).filter(
                 and_(
                     Stroke.expires_at <= threshold,
-                    Stroke.expires_at > datetime.now(timezone.utc)
+                    Stroke.expires_at > datetime.now(timezone.utc).replace(tzinfo=None)
                 )
             ).distinct().all()
             

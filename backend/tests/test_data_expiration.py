@@ -295,21 +295,25 @@ class TestCleanupScheduler:
     @pytest.mark.asyncio
     async def test_automated_cleanup_execution(self):
         """Test that scheduled cleanup jobs execute automatically."""
-        # This will fail - CleanupScheduler doesn't exist yet
         scheduler = CleanupScheduler()
         
-        # Mock the cleanup execution
-        cleanup_mock = AsyncMock()
+        # Mock the cleanup execution to return a CleanupResult
+        from app.services.data_expiration import CleanupResult
+        mock_result = CleanupResult(job_type="test", success=True, deleted_count=5)
+        
+        cleanup_mock = AsyncMock(return_value=mock_result)
         scheduler.set_cleanup_handler(cleanup_mock)
         
         # Trigger immediate execution for testing
-        await scheduler.execute_cleanup_now()
+        result = await scheduler.execute_cleanup_now()
         
         cleanup_mock.assert_called_once()
+        assert result.success is True
+        assert result.job_id.startswith('manual_cleanup_')
 
-    def test_cleanup_job_failure_handling(self):
+    @pytest.mark.asyncio
+    async def test_cleanup_job_failure_handling(self):
         """Test handling of cleanup job failures."""
-        # This will fail - CleanupScheduler doesn't exist yet
         scheduler = CleanupScheduler()
         
         # Mock a failing cleanup
@@ -319,9 +323,9 @@ class TestCleanupScheduler:
         scheduler.set_cleanup_handler(failing_cleanup)
         
         # Should handle failure gracefully
-        result = scheduler.execute_cleanup_now()
+        result = await scheduler.execute_cleanup_now()
         assert result.success is False
-        assert result.error_message is not None
+        assert result.error_message == "Cleanup failed"
 
 
 class TestStorageManager:
